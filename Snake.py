@@ -45,9 +45,14 @@ MDown = False
 Lost = False
 Won = False
 Score = 0
-AI = False
+AIH = False
+AIHH = False
 FPS = 20
-AIFPS = 30000
+AIHFPS = 30000
+AIHHFPS = AIHFPS
+HuntH = False
+DistHM = 10
+SnaLW = 882
 
 
 
@@ -77,9 +82,13 @@ def init():
     global MDown
     global Lost
     global Score
-    global AI
+    global AIH
+    global AIHH
     global FPS
     global Won
+    global PlayerFPS
+    global HuntH
+    
     SnakeArr = [[(Size + Gap) * 10,  (Size + Gap) * 10] , [(Size + Gap) * 10 - Size - Gap,  (Size + Gap) * 10]]
     SnakeLength = 2
     ApplePos = [-1,-1]
@@ -90,8 +99,11 @@ def init():
     Lost = False
     Won = False
     Score = 0
-    AI = False
-    FPS = 20
+    AIH = False
+    PlayerFPS = 20
+    FPS = PlayerFPS
+    AIHH = False
+    HuntH = False
 
 
 
@@ -104,6 +116,91 @@ def init():
 def column(matrix, i):
     return [row[i] for row in matrix]
 
+
+
+
+
+
+#This is to make the function K Push more readable.
+#Each direction either results in up, down, left or right.
+#Everything else is set to false.
+def UP():
+    global MUp
+    global MDown
+    global MLeft
+    global MRight
+    MUp = True
+    MLeft = False
+    MRight = False
+    MDown = False
+
+
+def LEFT():
+    global MUp
+    global MDown
+    global MLeft
+    global MRight
+    MUp = False
+    MLeft = True
+    MRight = False
+    MDown = False
+
+def RIGHT():
+    global MUp
+    global MDown
+    global MLeft
+    global MRight
+    MUp = False
+    MLeft = False
+    MRight = True
+    MDown = False
+
+def DOWN():
+    global MUp
+    global MDown
+    global MLeft
+    global MRight
+    MUp = False
+    MLeft = False
+    MRight = False
+    MDown = True
+
+def AIH_INIT():
+    global MUp
+    global MDown
+    global MLeft
+    global MRight
+    global AIH
+    global AIHFPS
+    global FPS
+    global PlayerFPS
+    
+    #AI Hamiltonian Mode starts with snake going up
+    AIH = not (AIH)
+    UP()
+    if AIH:
+        FPS = AIHFPS
+    else:
+        FPS = PlayerFPS
+
+
+def AIHH_INIT():
+    global MUp
+    global MDown
+    global MLeft
+    global MRight
+    global AIHH
+    global AIHHFPS
+    global FPS
+    global PlayerFPS
+    
+    #AI Hybrid Hamiltonian Mode starts with snake going up
+    AIHH = not (AIHH)
+    UP()
+    if AIHH:
+        FPS = AIHHFPS
+    else:
+        FPS = PlayerFPS
 
 
 
@@ -149,9 +246,11 @@ def KeyPush():
     global MRight
 
     global crashed
-    global AI
+    global AIH
     global FPS
-    global AIFPS
+    global AIHFPS
+    global AIHH
+    global AIHHFPS
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -161,59 +260,41 @@ def KeyPush():
             #This only applies before beginning the game
             if (not MUp) and (not MDown) and (not MLeft) and (not MRight):
                 if event.key == pygame.K_w or event.key == pygame.K_UP:
-                    MUp = True
-                    MLeft = False
-                    MRight = False
-                    MDown = False
+                    UP()
+                    return
                 elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                    MUp = False
-                    MLeft = False
-                    MRight = False
-                    MDown = True
+                    DOWN()
+                    return
                 if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                    MUp = False
-                    MLeft = True
-                    MRight = False
-                    MDown = False
+                    LEFT()
+                    return
                 elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                    MUp = False
-                    MLeft = False
-                    MRight = True
-                    MDown = False
+                    RIGHT()
+                    return
                 elif event.key == pygame.K_1:
-                    #Game goes in mode AI if 1 is pressed
-                    #AI Mode starts with snake going up
-                    AI = True
-                    MUp = True
-                    MLeft = False
-                    MRight = False
-                    MDown = False
-                    FPS = AIFPS
+                    #Game goes in mode Hamiltonian AI if 1 is pressed
+                    AIH_INIT()
+                    return
+                elif event.key == pygame.K_2:
+                    #Game goes in mode Hybrid Hamil AI if 2 is pressed
+                    AIHH_INIT()
                     return
 
             #If the snake goes up, it cannot go down right away.
             elif (not MUp) and (not MDown):
                 if event.key == pygame.K_w or event.key == pygame.K_UP:
-                    MUp = True
-                    MLeft = False
-                    MRight = False
-                    MDown = False
+                    UP()
                     return
                 elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                    MUp = False
-                    MLeft = False
-                    MRight = False
-                    MDown = True
+                    DOWN()
                     return
                 elif event.key == pygame.K_1:
-                    #Game goes in mode AI if 1 is pressed
-                    #AI Mode starts with snake going up
-                    AI = True
-                    MUp = True
-                    MLeft = False
-                    MRight = False
-                    MDown = False
-                    FPS = AIFPS
+                    #Game goes in mode Hamiltonian AI if 1 is pressed
+                    AIH_INIT()
+                    return
+                elif event.key == pygame.K_2:
+                    #Game goes in mode Hybrid Hamil AI if 2 is pressed
+                    AIHH_INIT()
                     return
 
                     
@@ -221,26 +302,18 @@ def KeyPush():
             #elif so that the snake needs to go up at least once before doing a u-turn
             elif (not MLeft) and (not MRight):
                 if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                    MUp = False
-                    MLeft = True
-                    MRight = False
-                    MDown = False
+                    LEFT()
                     return
                 elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                    MUp = False
-                    MLeft = False
-                    MRight = True
-                    MDown = False
+                    RIGHT()
                     return
                 elif event.key == pygame.K_1:
-                    #Game goes in mode AI if 1 is pressed
-                    #AI Mode starts with snake going up
-                    AI = True
-                    MUp = True
-                    MLeft = False
-                    MRight = False
-                    MDown = False
-                    FPS = AIFPS
+                    #Game goes in mode Hamiltonian AI if 1 is pressed
+                    AIH_INIT()
+                    return
+                elif event.key == pygame.K_2:
+                    #Game goes in mode Hybrid Hamil AI if 2 is pressed
+                    AIHH_INIT()
                     return
 
 
@@ -329,9 +402,11 @@ def GameLost():
 def GameWon():
     global Won
     global SnakeLength
-    global AIFPS
+    global FPS
+    global PlayerFPS
+    global SnaLW
 
-    if SnakeLength == 882:
+    if SnakeLength == SnaLW:
         Won = True
 
         #Congratulates the player if the game was won.
@@ -341,7 +416,7 @@ def GameWon():
         gameDisplay.blit(TextSurf, TextRect)
         pygame.display.update()
     elif SnakeLength >= 850:
-        FPS = 20
+        FPS = PlayerFPS
 
 
 
@@ -422,8 +497,9 @@ def Disp_Score():
 
 
 
-
-def SnakeAI():
+#This is the Hamiltonian Approach to the solving Snake, it is very slow
+#But this solution works every time
+def SnakeAIH():
     global SnakeArr
     global MUp
     global MDown
@@ -431,36 +507,180 @@ def SnakeAI():
     global MLeft
     
     if MUp and ((SnakeArr[0][1] - Block) <= YMin):
-        MUp = False
-        MDown = False
-        MRight = True
-        MLeft = False
+        RIGHT()
     elif MRight and ((SnakeArr[0][1] - Block) <= YMin):
-        MUp = False
-        MDown = True
-        MRight = False
-        MLeft = False
+        DOWN()
     elif MDown and ((SnakeArr[0][1] + 2 * Block) > YMax) and not (SnakeArr[0][0] + 2 * Block > XMax):
-        MUp = False
-        MDown = False
-        MRight = True
-        MLeft = False
+        RIGHT()
     elif MRight and ((SnakeArr[0][1] + 2 * Block) > YMax):
-        MUp = True
-        MDown = False
-        MRight = False
-        MLeft = False
+        UP()
     elif MDown and ((SnakeArr[0][1] + Block) > YMax):
-        MUp = False
-        MDown = False
-        MRight = False
-        MLeft = True
+        LEFT()
     elif MLeft and ((SnakeArr[0][0] - 2 * Block) < XMin):
-        MUp = True
-        MDown = False
-        MRight = False
-        MLeft = False
+        UP()
     
+    
+
+
+
+
+def HDistHM():
+    global SnakeLength
+    global DistHM
+    
+    if SnakeLength < 100:
+        DistHM = 20
+    elif SnakeLength < 200:
+        DistHM = 17
+    elif SnakeLength < 300:
+        DistHM = 15
+    elif SnakeLength < 400:
+        DistHM = 13
+    elif SnakeLength < 500:
+        DistHM = 10
+    elif SnakeLength < 600:
+        DistHM = 5
+    elif SnakeLength < 700:
+        DistHM = 3
+    else:
+        DistHM = 0
+
+
+
+
+
+#Checks if there is part of the snake between the head and the apple
+def IsSnakeAppX():
+    global SnakeArr
+    global ApplePos
+    global SnakeLength
+
+
+    for i in range(SnakeLength - 1):
+        #Counts in reverse since this mainly concerns the tail.
+        if (ApplePos[1] == SnakeArr[SnakeLength - 1 - i][1]):
+            TailLeftOfApple = (ApplePos[0] > SnakeArr[SnakeLength - 1 - i][0])
+            TailRightofHead = (SnakeArr[0][0] < SnakeArr[SnakeLength - 1 - i][0])
+            if TailLeftOfApple and TailRightofHead:
+                return True
+    return False
+
+
+
+
+
+
+
+
+
+
+
+
+#This is the Hybrid Hamiltonian Approach to the solving Snake, it is much faster
+#But this solution may fail close to the end
+def SnakeAIHH():
+    global SnakeArr
+    global MUp
+    global MDown
+    global MRight
+    global MLeft
+    global ApplePos
+    global Block
+    global HuntH
+    global SnakeLength
+    global SnaLW
+    global DistHM
+
+    HuntR = 3 * Block
+
+
+
+    
+    #True if the head is at the same X and Y as the apple
+    #SameX = (SnakeArr[0][0] == ApplePos[0])
+    SameY = (SnakeArr[0][1] == ApplePos[1])
+
+
+
+
+    #Measures how far we are in the X axis from the apple
+    XDist = (ApplePos[0] - SnakeArr[0][0])
+
+
+
+    HuntingRange = ( XDist <= HuntR ) and (XDist > 0)
+
+
+
+
+    #Checks if moving down twice / once would kill us
+    TwoFromDown = ((SnakeArr[0][1] + 2 * Block) > YMax) and not ((SnakeArr[0][1] + Block) > YMax)
+    OneFromDown = ((SnakeArr[0][1] + Block) > YMax)
+
+
+    
+
+    #Calculates max distance from the right:
+    HDistHM()
+    #Checks if we are close enough to the right wall
+    DistMFromRight = (SnakeArr[0][0] + DistHM * Block > XMax)
+
+
+
+
+    #Checks Length of Snake is less than 50
+    TooLarge = SnakeLength > 50
+    #Checks Length of Snake is less than 882
+    #WTooLarge = SnakeLength * 2 > SnaLW
+
+
+    #Checks if the apple is to the left.
+    App_IsLeft = XDist < 0
+
+    
+    if SameY and HuntingRange and not(IsSnakeAppX()) and not(OneFromDown):
+        #Hunt if apple is within reach to the right of the head.
+        RIGHT();
+        HuntH = True
+        return
+    elif TwoFromDown and not(TooLarge) and App_IsLeft and not HuntH:
+        #Come back if apple is to the left (don't keep going right)
+        HuntH = True
+        DOWN();
+        return
+    elif TwoFromDown and App_IsLeft and not HuntH and DistMFromRight: #and not(WTooLarge) 
+        #Come back if apple is to the left (don't keep going right)
+        HuntH = True
+        DOWN();
+        return
+    else:
+        if HuntH:
+            HuntH = not HuntH
+            if ((SnakeArr[0][0] + Block) > XMax):
+                DOWN()
+            elif OneFromDown:
+                LEFT()
+            else:
+                UP()
+        SnakeAIH()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -477,6 +697,11 @@ Apple()
 SnakeDisp(SnakeArr)
 pygame.display.update()
 Begin = False
+
+
+
+
+
 
 
 
@@ -502,10 +727,12 @@ while not crashed:
 
 
     #Checks for user input
-    if not(AI):
-        KeyPush()
+    if (AIH):
+        SnakeAIH()
+    elif (AIHH):
+        SnakeAIHH()
     else:
-        SnakeAI()
+        KeyPush()
 
 
 
